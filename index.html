@@ -1,0 +1,353 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My AI Virtual Pet</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #eee7ff, #ffe9f2);
+      color: #30254b;
+      min-height: 100vh;
+      padding: 25px;
+    }
+
+    .app {
+      max-width: 850px;
+      margin: auto;
+      background: white;
+      border-radius: 24px;
+      padding: 25px;
+      box-shadow: 0 12px 35px #65508b20;
+    }
+
+    h1, h2, p { text-align: center; }
+    h1 { color: #7954c8; margin-bottom: 5px; }
+    .subtitle { color: #786d8b; margin-top: 0; }
+
+    .pet-area {
+      text-align: center;
+      background: #f7f2ff;
+      border-radius: 20px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    #pet {
+      font-size: 115px;
+      display: block;
+      margin: 10px;
+      animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .mood {
+      display: inline-block;
+      background: #e5d9ff;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-weight: bold;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 20px 0;
+    }
+
+    .stat {
+      background: #faf8ff;
+      border: 1px solid #eee6ff;
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .stat label { display: block; margin-bottom: 8px; }
+    progress { width: 100%; accent-color: #9470e5; }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin: 20px 0;
+    }
+
+    button {
+      border: 0;
+      padding: 12px 18px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: bold;
+      background: #805bd0;
+      color: white;
+    }
+
+    button:hover { background: #6843b8; }
+    .secondary { background: #eae2fb; color: #493474; }
+
+    .chat {
+      border: 1px solid #eee6ff;
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    #messages {
+      height: 180px;
+      overflow-y: auto;
+      background: #faf8ff;
+      padding: 12px;
+      border-radius: 12px;
+    }
+
+    .message {
+      padding: 10px;
+      margin: 7px 0;
+      border-radius: 10px;
+      overflow-wrap: anywhere;
+    }
+
+    .pet-message { background: #eae2fb; }
+    .user-message { background: #e0f7ed; text-align: right; }
+
+    .chat-form { display: flex; gap: 8px; margin-top: 12px; }
+    input {
+      min-width: 0;
+      flex: 1;
+      padding: 12px;
+      border: 1px solid #d9cdec;
+      border-radius: 10px;
+      font-size: 15px;
+    }
+
+    @media (max-width: 550px) {
+      body { padding: 10px; }
+      .app { padding: 15px; }
+      .stats { grid-template-columns: 1fr; }
+      .chat-form { flex-direction: column; }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <h1>🐾 My AI Virtual Pet</h1>
+    <p class="subtitle">Meet your new digital friend!</p>
+
+    <section class="pet-area">
+      <h2 id="petName">Milo</h2>
+      <span id="pet">🐱</span>
+      <p id="personality">A friendly, playful and loving cat.</p>
+      <p class="mood" id="mood">😊 Mood: Happy</p>
+      <p id="petSpeech">Hello friend! Shall we play?</p>
+    </section>
+
+    <section class="stats">
+      <div class="stat">
+        <label>🍎 Hunger</label>
+        <progress id="hunger" value="30" max="100"></progress>
+        <span id="hungerText">30%</span>
+      </div>
+      <div class="stat">
+        <label>⚡ Energy</label>
+        <progress id="energy" value="80" max="100"></progress>
+        <span id="energyText">80%</span>
+      </div>
+      <div class="stat">
+        <label>💖 Happiness</label>
+        <progress id="happiness" value="70" max="100"></progress>
+        <span id="happinessText">70%</span>
+      </div>
+    </section>
+
+    <section class="actions">
+      <button onclick="feedPet()">🍎 Feed</button>
+      <button onclick="playPet()">🎾 Play</button>
+      <button onclick="petPet()">🤗 Cuddle</button>
+      <button onclick="sleepPet()">😴 Sleep</button>
+      <button class="secondary" onclick="resetPet()">🔄 Reset</button>
+    </section>
+
+    <section class="chat">
+      <h2>💬 Chat with Milo</h2>
+      <div id="messages" aria-live="polite">
+        <div class="message pet-message">
+          Milo: Hi! I'm Milo. Tell me how you're feeling!
+        </div>
+      </div>
+      <form class="chat-form" id="chatForm">
+        <input id="userInput" placeholder="Talk to your pet..."
+               autocomplete="off" required>
+        <button type="submit">Send 💌</button>
+      </form>
+    </section>
+    <p><small>Virtual pet simulation • HTML, CSS and JavaScript</small></p>
+  </main>
+
+  <script>
+    const initial = {
+      hunger: 30,
+      energy: 80,
+      happiness: 70
+    };
+
+    let stats = { ...initial };
+    let mood = "Happy";
+
+    const $ = id => document.getElementById(id);
+    const clamp = n => Math.max(0, Math.min(100, n));
+
+    function updatePet() {
+      $("hunger").value = stats.hunger;
+      $("energy").value = stats.energy;
+      $("happiness").value = stats.happiness;
+
+      $("hungerText").textContent = stats.hunger + "%";
+      $("energyText").textContent = stats.energy + "%";
+      $("happinessText").textContent = stats.happiness + "%";
+
+      if (stats.hunger >= 75) {
+        mood = "Hungry";
+      } else if (stats.energy <= 20) {
+        mood = "Sleepy";
+      } else if (stats.happiness <= 25) {
+        mood = "Sad";
+      } else if (stats.happiness >= 85) {
+        mood = "Excited";
+      } else {
+        mood = "Happy";
+      }
+
+      $("mood").textContent =
+        ({ Happy: "😊", Hungry: "🥺", Sleepy: "😴",
+           Sad: "😢", Excited: "🤩" })[mood] + " Mood: " + mood;
+
+      $("pet").textContent =
+        ({ Happy: "🐱", Hungry: "🐱", Sleepy: "😴",
+           Sad: "😿", Excited: "😻" })[mood];
+    }
+
+    function speak(message) {
+      $("petSpeech").textContent = message;
+      addMessage("Milo", message, false);
+    }
+
+    function addMessage(name, message, isUser) {
+      const div = document.createElement("div");
+      div.className = "message " +
+        (isUser ? "user-message" : "pet-message");
+      div.textContent = name + ": " + message;
+      $("messages").appendChild(div);
+      $("messages").scrollTop = $("messages").scrollHeight;
+    }
+
+    function feedPet() {
+      if (stats.hunger <= 0) {
+        speak("I'm full! Thank you for taking care of me. 💕");
+        return;
+      }
+      stats.hunger = clamp(stats.hunger - 30);
+      stats.happiness = clamp(stats.happiness + 10);
+      updatePet();
+      speak("Yummy! That food was delicious. Thank you! 🍎");
+    }
+
+    function playPet() {
+      if (stats.energy < 15) {
+        speak("I'm too tired to play. Can I sleep first? 😴");
+        return;
+      }
+      stats.energy = clamp(stats.energy - 20);
+      stats.hunger = clamp(stats.hunger + 15);
+      stats.happiness = clamp(stats.happiness + 20);
+      updatePet();
+      speak("Yay! Playing with you is so much fun! 🎾");
+    }
+
+    function petPet() {
+      stats.happiness = clamp(stats.happiness + 12);
+      updatePet();
+      speak("Purr purr! I love your cuddles. You are my best friend! 💖");
+    }
+
+    function sleepPet() {
+      stats.energy = clamp(stats.energy + 35);
+      stats.hunger = clamp(stats.hunger + 10);
+      updatePet();
+      speak("That was a lovely nap. I feel refreshed! 💤");
+    }
+
+    function resetPet() {
+      stats = { ...initial };
+      $("messages").innerHTML = "";
+      updatePet();
+      speak("I'm ready for a new adventure with you!");
+    }
+
+    // Context-aware demonstration chat.
+    // Replace this function with an AI API call for real AI responses.
+    function getPetResponse(message) {
+      const text = message.toLowerCase();
+
+      if (text.includes("hello") || text.includes("hi")) {
+        return "Hello bestie! I'm so happy you're here! 🐾";
+      }
+      if (text.includes("hungry") || text.includes("food")) {
+        return stats.hunger >= 50
+          ? "I'm getting hungry. Could you feed me? 🍎"
+          : "I'm not very hungry right now, thank you! 💕";
+      }
+      if (text.includes("sad") || text.includes("upset")) {
+        return "Oh no! I'm here for you. Want to tell me what happened? 💗";
+      }
+      if (text.includes("happy") || text.includes("good")) {
+        return "Your happiness makes me happy too! Let's celebrate! 🎉";
+      }
+      if (text.includes("play") || text.includes("game")) {
+        return stats.energy >= 20
+          ? "Let's play together! Press the Play button! 🎾"
+          : "I need some rest before we play again. 😴";
+      }
+      if (text.includes("sleep") || text.includes("tired")) {
+        return "A little rest can help us feel better. I'll take a nap! 💤";
+      }
+      if (text.includes("name")) {
+        return "My name is Milo! I'm your friendly virtual cat. 🐱";
+      }
+      if (text.includes("love") || text.includes("friend")) {
+        return "Awww! You're my favourite human friend! 💖";
+      }
+      return "That's interesting! Tell me more. I love spending time with you! 😊";
+    }
+
+    $("chatForm").addEventListener("submit", function(event) {
+      event.preventDefault();
+      const input = $("userInput");
+      const message = input.value.trim();
+      if (!message) return;
+
+      addMessage("You", message, true);
+      input.value = "";
+
+      const response = getPetResponse(message);
+      speak(response);
+      stats.happiness = clamp(stats.happiness + 3);
+      updatePet();
+    });
+
+    updatePet();
+  </script>
+</body>
+</html>
+
